@@ -1,0 +1,18 @@
+{
+  "diseases": [],
+  "symptoms": [
+    "fever",
+    "sore throat",
+    "cough"
+  ],
+  "medicines": [
+    {
+      "name": "syrup",
+      "dosage": "",
+      "timing": "",
+      "frequency": "",
+      "duration": "",
+      "source": "auto_extracted"
+    }
+  ]
+}

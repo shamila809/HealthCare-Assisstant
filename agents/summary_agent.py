@@ -3,9 +3,10 @@ Summary Agent
 Uses Google's Gemini API to generate concise medical summaries from transcribed text.
 """
 
-import google.generativeai as genai
+from google import genai
 import sys
 import os
+import time
 
 # Add project root to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,9 +18,11 @@ class SummaryAgent:
         if not GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is missing. Please set it in .env or environment variables.")
         
-        genai.configure(api_key=GEMINI_API_KEY)
-        # Trying gemini-flash-latest as a last resort for quota issues
-        self.model = genai.GenerativeModel('gemini-flash-latest')
+        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        # Using gemini-flash-latest alias (Likely maps to 1.5 Flash or stable version)
+        self.model_id = 'gemini-flash-latest'
+
+
 
     def generate_summary(self, text):
         """
@@ -38,6 +41,7 @@ class SummaryAgent:
         - Duration
         - Severity
         - Advice / Medicines (if mentioned)
+        - further conseltation details (if mentioned)
         
         Use simple English.
         Do not add new information.
@@ -47,11 +51,29 @@ class SummaryAgent:
         Clinical Note:
         """
         
-        try:
-            response = self.model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            return f"Error generating summary: {e}"
+        # Increased retries to handle long rate limit pauses (up to 60s)
+        max_retries = 2
+        base_delay = 10
+
+        for attempt in range(max_retries):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_id,
+                    contents=prompt
+                )
+                return response.text
+            except Exception as e:
+                # Check for 429 Resource Exhausted
+                # The error message from SDK usually contains the code or status
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    if attempt < max_retries - 1:
+                        wait_time = base_delay * (2 ** attempt)
+                        print(f"⚠️ Quota exceeded. Retrying summary generation in {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                
+                return f"Error generating summary: {e}"
 
 if __name__ == "__main__":
     # Test block

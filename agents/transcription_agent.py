@@ -69,6 +69,16 @@ def transcribe_audio(input_file="audio/cleaned.wav", model_size="large"):
         print(f"Warning: Could not generate summary: {e}")
         summary = None
     
+    # Save final cleaned text to file for the medical extractor
+    # Ensure transcriptions directory exists
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "transcriptions")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    output_filename = os.path.join(output_dir, "transcription_output.txt")
+    with open(output_filename, "w", encoding="utf-8") as f:
+        f.write(final_cleaned_text)
+    print(f"\n💾 Transcription saved to '{output_filename}'")
+    
     return final_cleaned_text, summary
 
 if __name__ == "__main__":

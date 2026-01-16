@@ -1,6 +1,7 @@
 import sounddevice as sd
 from scipy.io.wavfile import write
 import numpy as np
+import os
 
 def record_audio(filename="audio/raw.wav", fs=16000):
     print("🎤 Recording... Press Ctrl+C to stop (Max 30 mins)")
@@ -26,6 +27,9 @@ def record_audio(filename="audio/raw.wav", fs=16000):
     # Concatenate all chunks
     audio = np.concatenate(recorded_chunks, axis=0)
     
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+
     # Save file
     write(filename, fs, audio)
     print(f"✅ Saved to {filename}")

@@ -3,9 +3,10 @@ PostWhisperAccuracyPipeline (Gemini Edition)
 Cleans, translates, and normalizes Whisper transcriptions using Gemini 2.0 Flash.
 """
 
-import google.generativeai as genai
+from google import genai
 import sys
 import os
+import time
 
 # Add project root to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,9 +25,11 @@ class PostWhisperAccuracyPipeline:
         if not GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is missing from configuration.")
         
-        genai.configure(api_key=GEMINI_API_KEY)
-        # Using gemini-flash-latest for best quota compatibility
-        self.model = genai.GenerativeModel('gemini-flash-latest')
+        # Initialize the new GenAI Client
+        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        
+        # Using gemini-flash-latest alias
+        self.model_id = "gemini-flash-latest" 
         self.known_entities = known_entities or {}
 
     def process(self, whisper_text, detected_language):
@@ -63,15 +66,32 @@ class PostWhisperAccuracyPipeline:
         CLEANED TEXT:
         """
 
-        try:
-            response = self.model.generate_content(prompt)
-            # Basic cleaning of response in case models adds quotes
-            cleaned_text = response.text.strip().replace('"', '')
-            return cleaned_text
-        except Exception as e:
-            print(f"Warning: Gemini-based accuracy pipeline failed: {e}")
-            # Fallback to raw text if API fails
-            return whisper_text
+        max_retries = 2
+        base_delay = 10
+
+        for attempt in range(max_retries):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_id,
+                    contents=prompt
+                )
+                # Basic cleaning of response in case models adds quotes
+                cleaned_text = response.text.strip().replace('"', '')
+                return cleaned_text
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    if attempt < max_retries - 1:
+                        wait_time = base_delay * (2 ** attempt)
+                        print(f"⚠️ Quota exceeded. Retrying accuracy correction in {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                
+                print(f"Warning: Gemini-based accuracy pipeline failed: {e}")
+                # Fallback to raw text if API fails
+                return whisper_text
+        
+        return whisper_text
 
 if __name__ == "__main__":
     # Test
