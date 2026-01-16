@@ -38,5 +38,9 @@ env/
 Thumbs.db
 
 # Project Specific
-audio/*.wav
+audio/
+transcriptions/
 models_list.txt
+SETUP_API_KEY.md
+TECHNICAL_FLOW.md
+TROUBLESHOOTING.md

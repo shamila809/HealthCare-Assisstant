@@ -8,7 +8,10 @@ An AI-powered application designed to assist healthcare professionals by recordi
 - **Noise Reduction**: Cleans audio using `noisereduce` and `librosa` for clearer transcription.
 - **Accurate Transcription**: Uses OpenAI's Whisper model to transcribe speech to text.
 - **Intelligent Correction**: A Post-Whisper Accuracy Pipeline (powered by Gemini) corrects medical terms, protects known entities (names, hospitals), and fixes grammar.
-- **Clinical Summarization**: Generates structured clinical notes (Symptoms, Duration, Severity, Advice) using Gemini.
+- **Medical Info Extraction**: Extracts structured data (Diseases, Symptoms, Medicines) using `spacy`.
+- **Care Suggestions**: Generates rule-based general care advice based on identified conditions.
+- **Interactive Editor**: CLI-based tool to review and edit extracted prescriptions before finalizing.
+- **Clinical Summarization**: Generates structured clinical notes using Gemini.
 
 ## 🛠️ Installation
 
@@ -32,7 +35,13 @@ An AI-powered application designed to assist healthcare professionals by recordi
     pip install -r requirements.txt
     ```
 
-4.  **Configuration:**
+4.  **Download Spacy Language Model:**
+    Required for medical entity extraction.
+    ```bash
+    python -m spacy download en_core_web_sm
+    ```
+
+5.  **Configuration:**
     Create a `.env` file in the root directory and add your Gemini API key:
     ```env
     GEMINI_API_KEY=your_api_key_here
@@ -40,41 +49,57 @@ An AI-powered application designed to assist healthcare professionals by recordi
 
 ## 📋 Usage
 
-The workflow consists of two main stages: Recording and Processing.
+The workflow consists of recording, processing, and then interacting with the data.
 
 ### Step 1: Record Audio
-Run the audio agent to start recording. Press `Ctrl+C` to stop recording manually.
+Run the audio agent to start recording. Press `Ctrl+C` to stop manually.
 ```bash
 python agents/audio_agent.py
 ```
-*Output: Saves the raw audio to `audio/raw.wav`.*
 
 ### Step 2: Transcribe & Summarize
-Run the transcription agent to clean the audio, transcribe it, and generate a summary.
+Run the transcription agent to clean audio, transcribe, and generate a summary.
 ```bash
 python agents/transcription_agent.py
 ```
-*Output:*
-- *Cleans audio to `audio/cleaned.wav`*
-- *Prints raw Whisper transcription*
-- *Prints corrected text (Post-Processing)*
-- *Prints final Clinical Summary*
+
+### Step 3: Extract Medical Data
+Extracts structured information (medicines, diseases) from the transcript.
+```bash
+python agents/medical_extractor.py
+```
+
+### Step 4: Generate Care Suggestions
+Provides general wellness advice based on the extracted conditions.
+```bash
+python agents/care_suggestions.py
+```
+
+### Step 5: Edit Prescriptions (Optional)
+Interactively add, edit, or delete medicines from the extracted list.
+```bash
+python agents/medicine_cli_editor.py
+```
 
 ## 📁 Project Structure
 
 ```
 HealthCare-Assisstant/
 ├── agents/
-│   ├── audio_agent.py                  # Audio recording logic
+│   ├── audio_agent.py                  # Audio recording
 │   ├── audio_cleaning_agent.py         # Noise reduction
-│   ├── transcription_agent.py          # Main processing pipeline
-│   ├── post_whisper_accuracy_pipeline.py # Text correction (Gemini)
-│   └── summary_agent.py                # Summary generation (Gemini)
+│   ├── transcription_agent.py          # Transcription pipeline
+│   ├── post_whisper_accuracy_pipeline.py # Text correction
+│   ├── medical_extractor.py            # Spacy-based entity extraction
+│   ├── care_suggestions.py             # Rule-based advice generator
+│   ├── medicine_cli_editor.py          # TUI for editing medicines
+│   └── summary_agent.py                # Gemini summarization
 ├── config/
 │   └── settings.py                     # Configuration loader
-├── audio/                              # Directory for audio files (generated)
+├── audio/                              # Audio files (ignored by git)
+├── transcriptions/                     # Generated data (ignored by git)
 ├── requirements.txt                    # Python dependencies
-└── list_models.py                      # Utility to list available Gemini models
+└── list_models.py                      # Utility to list Gemini models
 ```
 
 ## ⚙️ Dependencies
